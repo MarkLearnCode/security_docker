@@ -3,6 +3,9 @@ package com.example.demo.oAuth;
 import java.util.HashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
@@ -11,21 +14,69 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.controller.PublicController;
 import com.example.demo.model.GoogleUser;
+import com.example.demo.model.Is_google_sign;
+import com.example.demo.model.Is_used;
+import com.example.demo.model.Roles;
+import com.example.demo.model.User;
+import com.example.demo.model.UserDetail;
+import com.example.demo.repository.UserRepository;
+import com.example.demo.security.JwtTokenProvider;
 
 @RestController
 @RequestMapping("/api")
-public class OauthController {
-	
+public class OauthController extends PublicController {
+
 	@Autowired
- 	private OAuth2GoogleService oAuth2GoogleService;
-	
+	private OAuth2GoogleService oAuth2GoogleService;
+
+	@Autowired
+	private UserRepository userRepository;
+
+	@Autowired
+	private JwtTokenProvider jwtTokenProvider;
+
 	@PostMapping("/oauthLogin")
-	public ResponseEntity<?> login(@RequestBody HashMap<String, String> googleToten){
-		
-		GoogleUser googleUser = oAuth2GoogleService.getUserInfo(googleToten.get("gJwt"));
-		System.out.println(googleUser.toString());
-		return null;
+	public ResponseEntity<?> login(@RequestBody HashMap<String, String> googleToten) {
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		System.out.println(googleToten.get("gJwt"));
+		try {
+			GoogleUser googleUser = oAuth2GoogleService.getUserInfo(googleToten.get("gJwt"));
+			User user = new User();
+			user.setRole(Roles.GUEST);
+			user.setIsUsed(Is_used.USED);
+			user.setIs_google_sign(Is_google_sign.GOOGLE_SIGN);
+			user.setUsername(googleUser.getEmail());
+			UserDetail userDetail = new UserDetail();
+//			userDetail.setIs_used(null);
+			userDetail.setRole(user.getRole());
+			userDetail.setUsername(user.getUsername());
+			String jwt = jwtTokenProvider.generateToken(userDetail);
+			user.setJwt(jwt);
+			
+			User oldUser = userRepository.findByUsername(user.getUsername());
+			if (oldUser==null) {
+				userRepository.save(user);
+			}else {
+				oldUser.setJwt(user.getJwt());
+				oldUser.setRole(user.getRole());
+				oldUser.setIs_google_sign(user.getIs_google_sign());
+				oldUser.setIsUsed(user.getIsUsed());
+				userRepository.save(oldUser);
+			}
+			
+			
+			System.out.println(googleUser.toString());
+
+			return new ResponseEntity<>(user, headers, HttpStatus.OK);
+		}
+
+		catch (Exception e) {
+			System.out.println("Google Auth Error");
+			return new ResponseEntity<>(headers, HttpStatus.UNAUTHORIZED);
+		}
 	}
 
 //	@PostMapping("/oauthLogin")

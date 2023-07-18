@@ -11,6 +11,7 @@ import com.example.demo.model.GoogleUser;
 
 @Service
 public class OAuth2GoogleService {
+	
 	public GoogleUser getUserInfo(String accessToken) {
 		String userInfoUrl = "https://www.googleapis.com/oauth2/v2/userinfo";
 

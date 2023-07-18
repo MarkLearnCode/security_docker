@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -25,6 +27,10 @@ public class User implements Serializable {
 
 	@Column(name="is_used")
 	private Is_used is_used;
+	
+	@Enumerated(EnumType.STRING)
+    @Column(name = "is_google_sign")
+    private Is_google_sign is_google_sign;
 
 	private String jwt;
 
@@ -83,6 +89,14 @@ public class User implements Serializable {
 
 	public void setUsername(String username) {
 		this.username = username;
+	}
+
+	public Is_google_sign getIs_google_sign() {
+		return is_google_sign;
+	}
+
+	public void setIs_google_sign(Is_google_sign is_google_sign) {
+		this.is_google_sign = is_google_sign;
 	}
 
 }
